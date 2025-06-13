@@ -142,6 +142,38 @@ export const getScheduledBookings = async (req, res) => {
 
 
 
+export const markBookingCompletedByUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { bookingId } = req.body;
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId,
+      status: "Scheduled", // ✅ optional safeguard: only allow marking scheduled ones
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found or not accessible" });
+    }
+
+    // Set isCompleted = true
+    booking.isCompleted = true;
+    await booking.save();
+
+    res.status(200).json({
+      message: "Booking marked as completed by user",
+      booking,
+    });
+  } catch (error) {
+    console.error("Error marking booking completed by user:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
+
 
 
 

@@ -46,6 +46,10 @@ required: true
     enum: ["Pending", "Scheduled", "Completed"],
     default: "Pending",
   },
+  isCompleted:{
+    type: Boolean,
+    default: false,
+  },
  genderPreference: {
   type: String,
   enum: ["Male", "Female", "Any"],
