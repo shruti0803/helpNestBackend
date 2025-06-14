@@ -11,6 +11,7 @@ import helperRoutes from './routes/helperRoute.js';
 import bookingRoutes from './routes/bookingRoute.js';
 import authERoutes from './routes/authE.js';  // 👈 your Google login route
 import healthRoutes from './routes/healthRoute.js'
+import billRoutes from './routes/billRoute.js'
 dotenv.config({ path: ".env" });
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api/helpers', helperRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/authE', authERoutes); // 👈 Now the Google OAuth routes work
 app.use('/api/health',healthRoutes);
+app.use('/api/bills', billRoutes);
 // ✅ Connect to database and start server
 connectDB();
 const PORT = process.env.PORT || 5000;

@@ -140,7 +140,24 @@ export const getScheduledBookings = async (req, res) => {
   }
 };
 
+export const getCompletedBookings = async (req, res) => {
+  // ✅ Safely extract the helper's ObjectId string
+  const helperId = req.helper?.id || req.helper; // support both { id: ... } and direct string
 
+  try {
+    const bookings = await Booking.find({
+      helper: helperId,
+      status: "Completed"
+    });
+
+    return res.status(200).json({ bookings });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message || err
+    });
+  }
+};
 
 export const markBookingCompletedByUser = async (req, res) => {
   try {
@@ -170,6 +187,8 @@ export const markBookingCompletedByUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
 
 
 
