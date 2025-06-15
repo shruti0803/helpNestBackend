@@ -29,15 +29,26 @@ export const createPaymentOrder = async (req, res) => {
 
 
 export const updatePaymentStatus = async (req, res) => {
-  const { bookingId, paymentId } = req.body;
+  try {
+    const { bookingId, paymentId } = req.body;
+    console.log("Updating payment for bookingId:", bookingId, "paymentId:", paymentId);
 
-  const bill = await Bill.findOne({ bookingId });
-  if (!bill) return res.status(404).json({ error: "Bill not found" });
+    if (!bookingId || !paymentId) {
+      return res.status(400).json({ error: "Missing bookingId or paymentId" });
+    }
 
-  bill.paymentId = paymentId;
-  bill.paymentStatus = "Paid";
-  await bill.save();
+    const bill = await Bill.findOne({ bookingId });
+    if (!bill) return res.status(404).json({ error: "Bill not found" });
 
-  res.status(200).json({ success: true, bill });
+    bill.paymentId = paymentId;
+    bill.paymentStatus = "Paid";
+    await bill.save();
+
+    return res.status(200).json({ success: true, bill });
+  } catch (err) {
+    console.error("Error updating payment:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
 };
+
 
