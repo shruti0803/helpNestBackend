@@ -76,3 +76,24 @@ export const getBillByBookingId = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+
+
+//all bills of user
+// Get all bills for the logged-in user
+export const getAllBillsForUser = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const bills = await Bill.find({ userId });
+
+    res.status(200).json(bills);
+  } catch (error) {
+    console.error("Error fetching user bills:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
