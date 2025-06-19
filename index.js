@@ -14,6 +14,7 @@ import healthRoutes from './routes/healthRoute.js';
 import billRoutes from './routes/billRoute.js'
 import Razorpay from "razorpay"
 import paymentRoutes from "./routes/paymentRoute.js"
+import adminRoutes from "./routes/adminRoute.js"; // ✅ adjust path
 dotenv.config({ path: ".env" });
 
 const app = express();
@@ -69,6 +70,7 @@ app.use('/api/bills', billRoutes);
 
 app.use("/api/payment", paymentRoutes);
 app.use("/api/health", healthRoutes);
+app.use("/api/admin", adminRoutes); 
 // ✅ Connect to database and start server
 connectDB();
 

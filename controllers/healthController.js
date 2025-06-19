@@ -73,14 +73,7 @@ const targetDayStr = targetDate.toISOString().split("T")[0];
         const entryDayStr = normalizeDate(entry.date).toISOString().split("T")[0];
 
 
-        console.log(
-          "📅 Checking:",
-          entry.name || med.name,
-          "| Entry Date:",
-          entryDayStr,
-          "| Matches Target?",
-          entryDayStr === targetDayStr
-        );
+      
 
         if (entryDayStr === targetDayStr) {
           tasks.push({
