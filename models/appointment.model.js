@@ -7,7 +7,11 @@ const AppointmentScheduleSchema = new mongoose.Schema({
   doctor: { type: String }, // optional: doctor or person name
   notes: { type: String }, // any additional notes
   reminder: { type: Boolean, default: false },
-
+   phone: {
+    type: String,
+    
+    match: [/^\d{10}$/, 'Phone number must be 10 digits'] // basic validation
+  },
   schedule: [
     {
       date: { type: Date, required: true },

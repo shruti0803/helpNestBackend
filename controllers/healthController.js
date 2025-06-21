@@ -6,7 +6,7 @@ const normalizeDate = (dateStr) => {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 };
 
-export const addMedicine = async (req, res) => {
+export const addMedicine = async (req, res) => { 
   try {
     const {
       name,
@@ -14,7 +14,8 @@ export const addMedicine = async (req, res) => {
       dosage,
       notes,
       reminder,
-      schedule // array of { date, timeSlot }
+      schedule, // array of { date, timeSlot }
+      phone  // <-- get phone from request body if reminder is true
     } = req.body;
 
     const userId = req.user.id; // comes from auth middleware
@@ -23,10 +24,14 @@ export const addMedicine = async (req, res) => {
       return res.status(400).json({ message: "Required fields are missing." });
     }
 
+    // 🔐 If reminder is true, phone must be provided
+    if (reminder && (!phone || phone.length < 10)) {
+      return res.status(400).json({ message: "Phone number is required for reminders." });
+    }
+
     // Format schedule
     const formattedSchedule = schedule.map(entry => ({
-     date: normalizeDate(entry.date),
-
+      date: normalizeDate(entry.date),
       timeSlot: entry.timeSlot,
       status: "missed"
     }));
@@ -38,6 +43,7 @@ export const addMedicine = async (req, res) => {
       dosage,
       notes,
       reminder: reminder || false,
+      phone: reminder ? phone : null,  // save phone only if reminder is true
       schedule: formattedSchedule
     });
 
@@ -52,6 +58,7 @@ export const addMedicine = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 
@@ -164,7 +171,8 @@ export const addAppointment = async (req, res) => {
       doctor,
       notes,
       reminder,
-      schedule // array of { date, timeSlot }
+      schedule, // array of { date, timeSlot }
+      phone // <-- get phone from body
     } = req.body;
 
     const userId = req.user.id;
@@ -173,9 +181,13 @@ export const addAppointment = async (req, res) => {
       return res.status(400).json({ message: "Required fields are missing." });
     }
 
-    const formattedSchedule = schedule.map(entry => ({
-     date: normalizeDate(entry.date),
+    // 🔐 If reminder is true, phone must be provided
+    if (reminder && (!phone || phone.length < 10)) {
+      return res.status(400).json({ message: "Phone number is required for reminders." });
+    }
 
+    const formattedSchedule = schedule.map(entry => ({
+      date: normalizeDate(entry.date),
       timeSlot: entry.timeSlot,
       status: "missed"
     }));
@@ -187,6 +199,7 @@ export const addAppointment = async (req, res) => {
       doctor,
       notes,
       reminder: reminder || false,
+      phone: reminder ? phone : null, // only save if reminder is true
       schedule: formattedSchedule
     });
 
@@ -201,6 +214,7 @@ export const addAppointment = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 
@@ -289,3 +303,71 @@ export const markAppointmentDone = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+
+
+
+import { format, subDays, isSameDay } from "date-fns";
+
+
+
+import axios from "axios";
+
+
+
+
+
+
+export const getStreak = async (req, res) => {
+  try {
+    const cookie = req.headers.cookie;
+    let streak = 0;
+    let currentDate = subDays(new Date(), 1); // ⏳ Start from yesterday
+    const MAX_LOOKBACK_DAYS = 30;
+    let checkedDays = 0;
+
+    while (checkedDays < MAX_LOOKBACK_DAYS) {
+      const dateStr = format(currentDate, "yyyy-MM-dd");
+
+      const [medRes, apptRes] = await Promise.all([
+        axios.get(`http://localhost:5000/api/health/meds-for-date?date=${dateStr}`, {
+          headers: { Cookie: cookie },
+        }),
+        axios.get(`http://localhost:5000/api/health/appts-for-date?date=${dateStr}`, {
+          headers: { Cookie: cookie },
+        }),
+      ]);
+
+      const meds = medRes.data.tasks || [];
+      const appts = apptRes.data.tasks || [];
+
+      const totalTasks = meds.length + appts.length;
+
+      if (totalTasks === 0) {
+        currentDate = subDays(currentDate, 1);
+        checkedDays++;
+        continue;
+      }
+
+      const allDone = [...meds, ...appts].every(
+        (task) => task.status === "done" || task.status === "taken"
+      );
+
+      if (!allDone) break;
+
+      streak++;
+      currentDate = subDays(currentDate, 1);
+      checkedDays++;
+    }
+
+    return res.status(200).json({ streak });
+  } catch (err) {
+    console.error("Error calculating streak:", err.message);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+
