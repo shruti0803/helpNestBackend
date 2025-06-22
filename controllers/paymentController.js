@@ -28,6 +28,18 @@ export const createPaymentOrder = async (req, res) => {
 };
 
 
+
+
+
+
+import Earning from "../models/earning.model.js";
+import Salary from "../models/salary.model.js";
+
+
+function getMonthString(date = new Date()) {
+  return date.toISOString().slice(0, 7); // e.g., "2025-06"
+}
+
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { bookingId, paymentId } = req.body;
@@ -44,11 +56,51 @@ export const updatePaymentStatus = async (req, res) => {
     bill.paymentStatus = "Paid";
     await bill.save();
 
+    // 🔢 Helper share (95% of baseAmount)
+    const helperId = bill.helperId;
+    const helperShare = bill.baseAmount * 0.95;
+
+    // ➕ Add/update Salary record
+    const existingSalary = await Salary.findOne({ helperId });
+    if (existingSalary) {
+      existingSalary.pendingAmount += helperShare;
+      await existingSalary.save();
+    } else {
+      await Salary.create({
+        helperId,
+        pendingAmount: helperShare,
+        lastCredited: null
+      });
+    }
+
+    // 📈 Update Earning for the month
+   const createdAt = bill?.createdAt || new Date();
+const month = getMonthString(new Date(createdAt));
+
+    let earning = await Earning.findOne({ month });
+
+    if (!earning) {
+      earning = new Earning({
+        month,
+        totalRevenue: 0,
+        totalSalaries: 0,
+        profit: 0
+      });
+    }
+
+    earning.totalRevenue += bill.totalAmountPaid; // what user paid
+    earning.totalSalaries += helperShare; // what will eventually be paid
+    earning.profit = earning.totalRevenue - earning.totalSalaries;
+
+    await earning.save();
+
     return res.status(200).json({ success: true, bill });
   } catch (err) {
     console.error("Error updating payment:", err);
     return res.status(500).json({ error: "Server error" });
   }
 };
+
+
 
 

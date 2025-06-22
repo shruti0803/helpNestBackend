@@ -6,7 +6,10 @@ const helperSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-
+totalEarned: {
+    type: Number,
+    default: 0 // lifetime earnings
+  },
   email: {
     type: String,
    
