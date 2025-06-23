@@ -104,3 +104,33 @@ const month = getMonthString(new Date(createdAt));
 
 
 
+
+export const getHelperSalary = async (req, res) => {
+  try {
+    const helperId = req.helper?.id;
+    if (!helperId) {
+      return res.status(401).json({ message: "Unauthorized: Helper ID missing" });
+    }
+
+    const salary = await Salary.findOne({ helperId });
+
+    if (!salary) {
+      return res.status(404).json({ message: "No salary record found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      helperId,
+      pendingAmount: salary.pendingAmount,
+      lastCredited: salary.lastCredited
+    });
+
+  } catch (error) {
+    console.error("Error fetching helper salary:", error);
+    res.status(500).json({ message: "Server error", success: false });
+  }
+};
+
+
+
+
