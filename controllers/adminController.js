@@ -211,3 +211,89 @@ export const getHelperSummary = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+
+
+
+
+
+
+export const getBookingsByCategory = async (req, res) => {
+  try {
+    const categories = [
+      "Tech Support",
+      "Medical Assistance",
+      "Companionship",
+      "Disability Support",
+      "Errand Services",
+      "Childcare"
+    ];
+
+    const results = await Booking.aggregate([
+      {
+        $match: {
+          service: { $in: categories }, // ✅ corrected field name
+        },
+      },
+      {
+        $group: {
+          _id: '$service', // ✅ corrected grouping field
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Fill in 0 for categories that had no bookings
+    const response = categories.map(cat => {
+      const found = results.find(r => r._id === cat);
+      return {
+        Service_Name: cat,
+        booking_count: found ? found.count : 0,
+      };
+    });
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error fetching bookings by category:', error);
+    res.status(500).json({ error: 'Failed to get bookings by category' });
+  }
+};
+
+
+
+
+
+
+export const getBookingsByCity = async (req, res) => {
+  try {
+    const cities = ['Delhi', 'Mumbai', 'Bangalore', 'Chennai', 'Kolkata', 'Other'];
+
+    const results = await Booking.aggregate([
+      {
+        $match: {
+          city: { $in: cities },
+        },
+      },
+      {
+        $group: {
+          _id: "$city",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const response = cities.map(city => {
+      const found = results.find(r => r._id === city);
+      return {
+        city,
+        count: found ? found.count : 0,
+      };
+    });
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error fetching bookings by city:", error);
+    res.status(500).json({ error: "Failed to fetch city-wise booking count" });
+  }
+};
+

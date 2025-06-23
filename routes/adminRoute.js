@@ -1,5 +1,5 @@
 import express from "express";
-import { adminLogin, adminLogout, getAdminProfile, getDailyBookings, getEarningByMonth, getHelperSummary, getUserSummary } from "../controllers/adminController.js";
+import { adminLogin, adminLogout, getAdminProfile, getBookingsByCategory, getBookingsByCity, getDailyBookings, getEarningByMonth, getHelperSummary, getUserSummary } from "../controllers/adminController.js";
 import isAdminAuthenticated from "../middleware/isAdminMiddleware.js";
 
 
@@ -18,4 +18,7 @@ router.get("/earnings/:month",getEarningByMonth);
 router.get('/bookings-by-date', getDailyBookings);
 router.get('/users/summary', getUserSummary);
 router.get('/helpers/summary',getHelperSummary);
+router.get('/bookings-by-category', getBookingsByCategory);
+router.get('/bookings-by-city',getBookingsByCity);
+
 export default router;
