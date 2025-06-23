@@ -23,6 +23,8 @@ const AppointmentScheduleSchema = new mongoose.Schema({
       }
     }
   ]
+},{
+  timestamps: true // this adds `createdAt` and `updatedAt` automatically
 });
 
 const AppointmentSchedule = mongoose.model("AppointmentSchedule", AppointmentScheduleSchema);

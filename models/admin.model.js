@@ -23,6 +23,8 @@ const adminSchema = new mongoose.Schema({
     type: String,
     default: "admin"
   }
+}, {
+  timestamps: true // this adds `createdAt` and `updatedAt` automatically
 });
 
 export default mongoose.model("Admin", adminSchema);

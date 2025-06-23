@@ -90,6 +90,8 @@ totalEarned: {
   required: true
 }]
 
+}, {
+  timestamps: true // this adds `createdAt` and `updatedAt` automatically
 });
 
 // Scheduled check to mark inactive if no govDocument after 7 days

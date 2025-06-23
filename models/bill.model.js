@@ -30,6 +30,8 @@ const BillSchema = new mongoose.Schema({
   paymentId: { type: String }, // Razorpay payment ID (optional)
 
   createdAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true // this adds `createdAt` and `updatedAt` automatically
 });
 
 export default mongoose.model('Bill', BillSchema);

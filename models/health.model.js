@@ -23,6 +23,8 @@ const MedicineScheduleSchema = new mongoose.Schema({
       }
     }
   ]
+},{
+  timestamps: true // this adds `createdAt` and `updatedAt` automatically
 });
 
 const MedicineSchedule = mongoose.model("MedicineSchedule", MedicineScheduleSchema);
