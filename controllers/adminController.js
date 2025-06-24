@@ -1,6 +1,6 @@
 import Admin from "../models/admin.model.js"
 import jwt from "jsonwebtoken";
-
+import Bill from '../models/bill.model.js'
 // 🔐 Admin Login
 export const adminLogin = async (req, res) => {
   try {
@@ -318,6 +318,17 @@ export const getAllHelpers = async (req, res) => {
     res.status(200).json(users);
   } catch (error) {
     console.error("Error fetching helpers:", error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+
+export const getAllBills = async (req, res) => {
+  try {
+    const users = await Bill.find(); // You can add filters here if needed
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching bills:", error);
     res.status(500).json({ message: 'Server Error' });
   }
 };

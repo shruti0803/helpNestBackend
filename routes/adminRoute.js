@@ -1,5 +1,5 @@
 import express from "express";
-import { adminLogin, adminLogout, getAdminProfile, getAllHelpers, getAllUsers, getBookingsByCategory, getBookingsByCity, getDailyBookings, getEarningByMonth, getHelperSummary, getUserSummary, verifyHelper } from "../controllers/adminController.js";
+import { adminLogin, adminLogout, getAdminProfile, getAllBills, getAllHelpers, getAllUsers, getBookingsByCategory, getBookingsByCity, getDailyBookings, getEarningByMonth, getHelperSummary, getUserSummary, verifyHelper } from "../controllers/adminController.js";
 import isAdminAuthenticated from "../middleware/isAdminMiddleware.js";
 
 
@@ -22,5 +22,6 @@ router.get('/bookings-by-category', getBookingsByCategory);
 router.get('/bookings-by-city',getBookingsByCity);
 router.get("/allUsers", getAllUsers);
 router.get('/allHelpers', getAllHelpers);
+router.get('/allBills', getAllBills);
 router.patch('/verify/:id', verifyHelper);
 export default router;
