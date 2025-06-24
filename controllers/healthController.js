@@ -29,6 +29,12 @@ export const addMedicine = async (req, res) => {
       return res.status(400).json({ message: "Phone number is required for reminders." });
     }
 
+    // ✅ Fix phone format
+    let formattedPhone = null;
+    if (reminder) {
+      formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
+    }
+
     // Format schedule
     const formattedSchedule = schedule.map(entry => ({
       date: normalizeDate(entry.date),
@@ -43,7 +49,7 @@ export const addMedicine = async (req, res) => {
       dosage,
       notes,
       reminder: reminder || false,
-      phone: reminder ? phone : null,  // save phone only if reminder is true
+      phone: formattedPhone,  // ✅ always in +91 format
       schedule: formattedSchedule
     });
 
@@ -58,6 +64,7 @@ export const addMedicine = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 

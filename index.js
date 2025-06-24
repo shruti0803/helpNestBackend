@@ -79,3 +79,24 @@ console.log('Google Client ID:', process.env.GOOGLE_CLIENT_ID);
 console.log('Google Client Secret:', process.env.GOOGLE_CLIENT_SECRET);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+
+
+
+import './Sms/reminderCorn.js'
+
+
+// Test SMS route
+import sendSMS from './Sms/sendSms.js';
+
+app.post('/api/test/send-test-sms', async (req, res) => {
+  const { phone, message } = req.body;
+
+  try {
+    await sendSMS(phone, message);
+    res.json({ success: true, msg: 'SMS sent successfully!' });
+  } catch (error) {
+    res.status(500).json({ success: false, msg: 'Failed to send SMS', error: error.message });
+  }
+});

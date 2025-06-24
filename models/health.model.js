@@ -7,11 +7,14 @@ const MedicineScheduleSchema = new mongoose.Schema({
   dosage: String,
   notes: String,
   reminder: { type: Boolean, default: false },
-  phone: {
-    type: String,
+
     
-    match: [/^\d{10}$/, 'Phone number must be 10 digits'] // basic validation
-  },
+   phone: {
+  type: String,
+  match: [/^\+91\d{10}$/, 'Phone number must be in +91 format']
+}
+
+ ,
   schedule: [
     {
       date: { type: Date, required: true },
