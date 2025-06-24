@@ -1,6 +1,8 @@
 import Admin from "../models/admin.model.js"
 import jwt from "jsonwebtoken";
 import Bill from '../models/bill.model.js'
+import User from "../models/user.model.js";
+import Helper from "../models/helper.model.js"
 // 🔐 Admin Login
 export const adminLogin = async (req, res) => {
   try {
@@ -162,8 +164,7 @@ export const getDailyBookings = async (req, res) => {
 
 
 
-import User from "../models/user.model.js";
-import Helper from "../models/helper.model.js"
+
 export const getUserSummary = async (req, res) => {
   try {
     const now = new Date();
@@ -325,13 +326,30 @@ export const getAllHelpers = async (req, res) => {
 
 export const getAllBills = async (req, res) => {
   try {
-    const users = await Bill.find(); // You can add filters here if needed
-    res.status(200).json(users);
+    const bills = await Bill.find()
+      .populate({
+        path: 'userId',
+        select: 'name email',
+        model: 'User'
+      })
+      .populate({
+        path: 'helperId',
+        select: 'name email',
+        model: 'Helper'
+      })
+      .populate({
+        path: 'bookingId',
+        select: 'service',
+        model: 'Booking'
+      });
+
+    res.status(200).json(bills);
   } catch (error) {
     console.error("Error fetching bills:", error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
 
 
 export const verifyHelper = async (req, res) => {
@@ -354,4 +372,92 @@ export const verifyHelper = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+
+
+
+import Salary from '../models/salary.model.js'
+
+
+
+export const getPendingSalaries = async (req, res) => {
+  try {
+    const helpers = await Helper.find();
+
+    const result = await Promise.all(
+      helpers.map(async (helper) => {
+        const salary = await Salary.findOne({ helperId: helper._id });
+
+        return {
+          id:helper.id,
+          name: helper.name,
+          phone: helper.phone,
+          accountNumber: helper.accountNumber,
+          ifscCode: helper.ifscCode,
+          totalEarned: helper.totalEarned || 0,
+          pendingAmount: salary?.pendingAmount || 0
+        };
+      })
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching pending salaries:', error);
+    res.status(500).json({ message: 'Server error while fetching pending salaries' });
+  }
+};
+
+
+
+
+export const paySalary = async (req, res) => {
+  try {
+    const { helperId } = req.body;
+
+    if (!helperId) {
+      return res.status(400).json({ message: 'Helper ID is required' });
+    }
+
+    // Fetch salary record
+    const salaryRecord = await Salary.findOne({ helperId });
+
+    if (!salaryRecord) {
+      return res.status(404).json({ message: 'Salary record not found for this helper' });
+    }
+
+    const pendingAmount = salaryRecord.pendingAmount;
+
+    if (pendingAmount <= 0) {
+      return res.status(400).json({ message: 'No pending amount to pay' });
+    }
+
+    // Update helper totalEarned
+    const helper = await Helper.findById(helperId);
+    if (!helper) {
+      return res.status(404).json({ message: 'Helper not found' });
+    }
+
+    helper.totalEarned = (helper.totalEarned || 0) + pendingAmount;
+    await helper.save();
+
+    // Set salary pendingAmount to 0
+    salaryRecord.pendingAmount = 0;
+    await salaryRecord.save();
+
+    return res.status(200).json({
+      message: 'Salary paid successfully',
+      paidAmount: pendingAmount,
+      helper: {
+        id: helper._id,
+        name: helper.name,
+        totalEarned: helper.totalEarned,
+      },
+    });
+  } catch (error) {
+    console.error('Error paying salary:', error);
+    return res.status(500).json({ message: 'Server error during salary payment' });
+  }
+};
+
+
 
