@@ -2,6 +2,7 @@ import Booking from "../models/booking.model.js";
 import mongoose from "mongoose";
 import Helper from '../models/helper.model.js';
 import User from '../models/user.model.js'
+import Notification from '../models/notification.model.js'
 export const createBooking = async (req, res) => {
   try {
     const {
@@ -30,6 +31,25 @@ export const createBooking = async (req, res) => {
     });
 
     const savedBooking = await newBooking.save();
+
+
+
+// 🔔 Notify all eligible helpers
+    const eligibleHelpers = await Helper.find({
+      city: savedBooking.city,
+      services: savedBooking.service, // if `services` is array in helper
+    });
+
+    const notifications = eligibleHelpers.map(helper => ({
+      recipient: helper._id,
+      message: `New booking request for ${savedBooking.service}`,
+      type: "booking",
+      relatedBooking: savedBooking._id,
+    }));
+
+    await Notification.insertMany(notifications);
+
+
 
     res.status(201).json({
       message: "Booking created successfully",
