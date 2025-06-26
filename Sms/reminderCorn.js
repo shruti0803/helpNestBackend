@@ -15,8 +15,10 @@ function getTimeOfDay(hour) {
   return 'night';
 }
 
-// Every 15 minutes (set to * * * * * just for quick testing)
-cron.schedule('0 * * * *', async () => {
+//for 1 min 
+// cron.schedule('*/1 * * * *', async () => {
+    //for three hours
+cron.schedule('0 */3 * * *', async () => {
 
   const now = moment();
   const startOfDay = moment().startOf('day').toDate();
@@ -45,8 +47,8 @@ cron.schedule('0 * * * *', async () => {
 
       if (matchingEntry) {
         console.log(`📤 Sending medicine reminder to ${med.phone} for "${med.name}"`);
-       await sendSMS(
-  `+91${med.phone}`, // add +91 here
+      await sendSMS(
+  med.phone, // ✅ already has +91
   `⏰ Reminder: Take your medicine "${med.name}" this ${timeOfDay}.`
 );
 
@@ -75,9 +77,10 @@ cron.schedule('0 * * * *', async () => {
       if (matchingEntry) {
         console.log(`📤 Sending appointment reminder to ${appt.phone} for "${appt.title}"`);
        await sendSMS(
-  `+91${appt.phone}`, // add +91
+  appt.phone, // ✅ already has +91
   `📅 Reminder: You have an appointment "${appt.title}" this ${timeOfDay}.`
 );
+
 
       }
     }

@@ -175,25 +175,49 @@ export const markBookingCompletedByUser = async (req, res) => {
     const booking = await Booking.findOne({
       _id: bookingId,
       user: userId,
-      status: "Scheduled", // ✅ optional safeguard: only allow marking scheduled ones
+      status: "Scheduled", // Only scheduled bookings
     });
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found or not accessible" });
     }
 
-    // Set isCompleted = true
+    // ✅ Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // ✅ Set fields
     booking.isCompleted = true;
+    booking.otp = otp;
+    booking.otpGeneratedAt = new Date();
+
     await booking.save();
 
     res.status(200).json({
-      message: "Booking marked as completed by user",
-      booking,
+      message: "Booking marked as completed. Share this OTP with the helper.",
+      otp,
     });
   } catch (error) {
     console.error("Error marking booking completed by user:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
+};
+
+
+
+
+// PUT /api/bookings/verify-otp
+export const verifyOtp = async (req, res) => {
+  const { bookingId, enteredOtp } = req.body;
+  const booking = await Booking.findById(bookingId);
+  
+  if (!booking || booking.otp !== enteredOtp) {
+    return res.status(400).json({ message: "OTP incorrect or booking not found" });
+  }
+
+  booking.otpVerified = true;
+  await booking.save();
+
+  res.status(200).json({ message: "OTP verified successfully" });
 };
 
 

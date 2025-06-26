@@ -58,7 +58,14 @@ required: true
   createdAt: {
     type: Date,
     default: Date.now,
-  }
+  },
+  otp: { type: String, default: null },
+ otpVerified:{
+  type: Boolean,
+  default: false
+ },
+otpGeneratedAt: { type: Date, default: null }
+
 });
 
 const Booking = mongoose.model("Booking", bookingSchema);
