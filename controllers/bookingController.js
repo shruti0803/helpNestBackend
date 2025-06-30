@@ -79,8 +79,10 @@ export const getAvailableTasks = async (req, res) => {
     if (!helper) {
       return res.status(404).json({ message: "Helper not found" });
     }
-
-    const { city: helperCity, services: helperServices, gender: helperGender } = helper;
+ if (!helper.isVerified) {
+      return res.status(403).json({ message: "Only verified helpers can access tasks" });
+    }
+    const { city: helperCity, services: helperServices  } = helper;
 
     const bookings = await Booking.find({
       status: "Pending",
