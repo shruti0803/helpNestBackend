@@ -43,7 +43,7 @@ function getMonthString(date = new Date()) {
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { bookingId, paymentId } = req.body;
-    console.log("Updating payment for bookingId:", bookingId, "paymentId:", paymentId);
+    //console.log("Updating payment for bookingId:", bookingId, "paymentId:", paymentId);
 
     if (!bookingId || !paymentId) {
       return res.status(400).json({ error: "Missing bookingId or paymentId" });

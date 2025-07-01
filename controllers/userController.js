@@ -31,7 +31,7 @@ export const registerUser = async (req, res) => {
       userId: newUser._id
     };
     const token = await jwt.sign(tokenData, process.env.TOKEN_SECRET, { expiresIn: "1d" });
-    console.log("TOKEN_SECRET in register:", process.env.TOKEN_SECRET);
+   // console.log("TOKEN_SECRET in register:", process.env.TOKEN_SECRET);
 
 
     // Set token in cookie
@@ -80,7 +80,7 @@ export const userLogin=async (req, res)=>{
             userId:user._id
         }
         const token=await jwt.sign(tokenData, process.env.TOKEN_SECRET,{expiresIn:"1d"});
-        console.log("TOKEN_SECRET in login:", process.env.TOKEN_SECRET);
+       // console.log("TOKEN_SECRET in login:", process.env.TOKEN_SECRET);
 
         return res.status(201).cookie("token", token,{expiresIn:"1d", httpOnly:true} ).json({
             message:`Welcome back ${
@@ -140,3 +140,48 @@ export function requireAuth(req, res, next) {
 
 
 
+export const addEmergencyNumber = async (req, res) => {
+  try {
+    const userId = req.user.id; // assuming auth middleware adds req.user
+    const { emergencyNumber } = req.body;
+
+    if (!emergencyNumber || emergencyNumber.length < 8) {
+      return res.status(400).json({ message: 'Invalid emergency number' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { emergencyNumber },
+      { new: true }
+    ).select('-password');
+
+    res.status(200).json({ message: 'Emergency number updated', user });
+  } catch (error) {
+    console.error('Error updating emergency number:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+import sendSMS from '../Sms/sendSms.js';
+
+export const sendEmergencyMessage = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+
+    if (!user || !user.emergencyNumber) {
+      return res.status(400).json({ message: "Emergency number not set" });
+    }
+
+    const emergencyMessage = `🚨 Emergency Alert: ${user.name || 'A user'} needs urgent help! Please reach out immediately.`;
+
+    await sendSMS(`+91${user.emergencyNumber}`, emergencyMessage);
+
+    res.status(200).json({ message: "Emergency alert sent" });
+  } catch (error) {
+    console.error("❌ Error sending emergency alert:", error.message);
+    res.status(500).json({ message: "Failed to send emergency message" });
+  }
+};

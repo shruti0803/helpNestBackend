@@ -16,7 +16,7 @@ import Razorpay from "razorpay"
 import paymentRoutes from "./routes/paymentRoute.js"
 import adminRoutes from "./routes/adminRoute.js"; // ✅ adjust path
 import notificationRoutes from "./routes/notificationRoute.js";
-import llmRoutes from "./routes/llm.js"
+
 import shopRoutes from "./routes/shopRoute.js"
 dotenv.config({ path: ".env" });
 
@@ -78,7 +78,7 @@ app.use("/api/admin", adminRoutes);
 
 app.use('/api/notifications', notificationRoutes);
 
-app.use('/api/llm', llmRoutes);
+
 app.use("/api/shop", shopRoutes);
 
 // app.use("/api/notifications", notificationRoutes);

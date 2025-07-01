@@ -77,7 +77,7 @@ export const getMedsForDate = async (req, res) => {
     const targetDate = normalizeDate(dateQuery || new Date());
 const targetDayStr = targetDate.toISOString().split("T")[0];
 
-    console.log("🎯 Target Day:", targetDayStr); // e.g., 2025-06-17
+    //console.log("🎯 Target Day:", targetDayStr); // e.g., 2025-06-17
 
     const meds = await MedicineSchedule.find({ userId });
     const tasks = [];
@@ -103,7 +103,7 @@ const targetDayStr = targetDate.toISOString().split("T")[0];
       });
     });
 
-    console.log("✅ Final tasks:", tasks);
+   // console.log("✅ Final tasks:", tasks);
     res.status(200).json({ tasks });
   } catch (err) {
     console.error("❌ Error fetching medicines for date:", err);

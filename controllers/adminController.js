@@ -80,7 +80,7 @@ export const getAdminProfile = async (req, res) => {
       return res.status(404).json({ message: "Admin not found" });
     }
 
-    console.log("👤 Admin profile request:", req.user);
+    // console.log("👤 Admin profile request:", req.user);
     return res.status(200).json({ admin });
   } catch (error) {
     console.error("🟥 Error in getAdminProfile:", error);

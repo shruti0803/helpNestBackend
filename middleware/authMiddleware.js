@@ -11,15 +11,15 @@ const isAuthenticated = (req, res, next) => {
 
     // ✅ Else, try JWT from cookie (Email/password login)
     const token = req.cookies.token;
-    console.log("Token from cookie:", token);
-    console.log("TOKEN_SECRET in middleware:", process.env.TOKEN_SECRET);
+    // console.log("Token from cookie:", token);
+    // console.log("TOKEN_SECRET in middleware:", process.env.TOKEN_SECRET);
 
     if (!token) {
       return res.status(401).json({ message: "User not authenticated", success: false });
     }
 
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-    console.log("Decoded token:", decoded);
+    // console.log("Decoded token:", decoded);
 
     req.user = { id: decoded.userId }; // Set req.user for consistency
     next();

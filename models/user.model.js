@@ -23,8 +23,12 @@ const userSchema = new mongoose.Schema({
     match: [/^\d{10}$/, 'Phone number must be 10 digits'] // basic validation
   },
 
-  //  otp: { type: String },
-  // otpExpiry: { type: Date }
+ emergencyNumber: {
+  type: String,
+  default: ''
+},
+
+ 
 },{
   timestamps: true // this adds `createdAt` and `updatedAt` automatically
 });
