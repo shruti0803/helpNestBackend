@@ -1,5 +1,5 @@
 import express from "express";
-import { addMedicine, addToCart, getAllMedicines, getCart, getMedicineById, removeFromCart } from "../controllers/shopController.js";
+import { addMedicine, addToCart, buyMedicine, getAllMedicines, getCart, getMedicineById, removeFromCart } from "../controllers/shopController.js";
 import isAuthenticated from "../middleware/authMiddleware.js";
 
 // import { protectAdmin } from "../middleware/authMiddleware.js"; // Optional if auth is used
@@ -17,7 +17,7 @@ router.post('/add', isAuthenticated, addToCart);
 router.post('/remove', isAuthenticated, removeFromCart);
 router.get('/getCart', isAuthenticated, getCart);
 
-
+router.post('/checkout', isAuthenticated, buyMedicine);
 
 router.get("/:id", getMedicineById);
 export default router;

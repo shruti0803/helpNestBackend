@@ -1,5 +1,5 @@
 import Medicine from "../models/shop.model.js";
-
+import Cart from '../models/cart.model.js';
 // Add new medicine
 export const addMedicine = async (req, res) => {
   try {
@@ -43,7 +43,7 @@ export const getMedicineById = async (req, res) => {
 
 
 
-import Cart from '../models/cart.model.js';
+
 
 // Add or update a medicine in cart
 export const addToCart = async (req, res) => {
@@ -123,3 +123,72 @@ export const getCart = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch cart', error: err });
   }
 };
+
+
+import Order from '../models/order.model.js';
+
+
+export const buyMedicine = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Optional: Extract payment info from request body
+    const { paymentMode, paymentId } = req.body;
+
+    // Step 1: Get cart for the user
+    const cart = await Cart.findOne({ userId });
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    // Step 2: Calculate total & prepare order items
+    let totalAmount = 0;
+    const orderItems = [];
+
+    for (const item of cart.items) {
+      const med = await Medicine.findById(item.medicineId);
+      if (!med) continue;
+
+      // Check stock
+      if (med.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for ${med.name}. Available: ${med.stock}`,
+        });
+      }
+
+      const price = med.price;
+      totalAmount += price * item.quantity;
+
+      orderItems.push({
+        medicineId: item.medicineId,
+        quantity: item.quantity,
+        priceAtPurchase: price,
+      });
+
+      // ✅ Reduce stock
+      med.stock -= item.quantity;
+      await med.save();
+    }
+
+    // Step 3: Save the order
+    const newOrder = new Order({
+      userId,
+      items: orderItems,
+      totalAmount,
+      paymentStatus: 'Paid', // assume paid if you are not integrating gateway yet
+      paymentMode: paymentMode || 'Cash',
+      paymentId: paymentId || null,
+    });
+    await newOrder.save();
+
+    // Step 4: Clear cart
+    cart.items = [];
+    await cart.save();
+
+    res.status(200).json({ message: 'Order placed successfully', order: newOrder });
+  } catch (error) {
+    console.error('Checkout error:', error);
+    res.status(500).json({ message: 'Failed to complete order', error });
+  }
+};
+
