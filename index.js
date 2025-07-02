@@ -31,11 +31,7 @@ export const instance = new Razorpay({
 
 instance.orders.all().then(console.log).catch(console.error);
 
-// app.post("/payment/process", (req,res)=>{
-//   res.status(200).json({
-//     success:true
-//   })
-// })
+
 
 app.use('/uploads', express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));

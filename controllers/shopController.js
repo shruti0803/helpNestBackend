@@ -128,20 +128,23 @@ export const getCart = async (req, res) => {
 import Order from '../models/order.model.js';
 
 
+// ✅ Updated buyMedicine controller with Razorpay integration
+
+import { instance } from "../index.js";
+import crypto from 'crypto';
+
+
+
+
 export const buyMedicine = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Optional: Extract payment info from request body
-    const { paymentMode, paymentId } = req.body;
-
-    // Step 1: Get cart for the user
     const cart = await Cart.findOne({ userId });
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ message: 'Cart is empty' });
     }
 
-    // Step 2: Calculate total & prepare order items
     let totalAmount = 0;
     const orderItems = [];
 
@@ -149,7 +152,73 @@ export const buyMedicine = async (req, res) => {
       const med = await Medicine.findById(item.medicineId);
       if (!med) continue;
 
-      // Check stock
+      if (med.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for ${med.name}. Available: ${med.stock}`,
+        });
+      }
+
+      const price = med.price;
+      totalAmount += price * item.quantity;
+
+      orderItems.push({
+        medicineId: item.medicineId,
+        quantity: item.quantity,
+        priceAtPurchase: price,
+      });
+    }
+
+    // Create Razorpay order
+    const razorpayOrder = await instance.orders.create({
+      amount: totalAmount * 100, // in paise
+      currency: 'INR',
+      receipt: `med_order_${Date.now()}`,
+      notes: {
+        userId,
+        purpose: 'Medicine Purchase',
+      },
+    });
+
+    res.status(200).json({
+      message: 'Razorpay order created',
+      razorpayOrderId: razorpayOrder.id,
+      amount: totalAmount * 100,
+      currency: 'INR',
+      key: process.env.RAZORPAY_API_KEY,
+    });
+  } catch (error) {
+    console.error('Razorpay medicine checkout error:', error);
+    res.status(500).json({ message: 'Failed to create Razorpay order', error });
+  }
+};
+
+// ✅ After payment is done, a separate endpoint can confirm it and create the Order in DB
+export const confirmMedicinePayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_API_SECRET)
+      .update(razorpay_order_id + '|' + razorpay_payment_id)
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ message: 'Invalid payment signature' });
+    }
+
+    const userId = req.user.id;
+    const cart = await Cart.findOne({ userId });
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    let totalAmount = 0;
+    const orderItems = [];
+
+    for (const item of cart.items) {
+      const med = await Medicine.findById(item.medicineId);
+      if (!med) continue;
+
       if (med.stock < item.quantity) {
         return res.status(400).json({
           message: `Insufficient stock for ${med.name}. Available: ${med.stock}`,
@@ -165,30 +234,28 @@ export const buyMedicine = async (req, res) => {
         priceAtPurchase: price,
       });
 
-      // ✅ Reduce stock
       med.stock -= item.quantity;
       await med.save();
     }
 
-    // Step 3: Save the order
     const newOrder = new Order({
       userId,
       items: orderItems,
       totalAmount,
-      paymentStatus: 'Paid', // assume paid if you are not integrating gateway yet
-      paymentMode: paymentMode || 'Cash',
-      paymentId: paymentId || null,
+      paymentStatus: 'Paid',
+      paymentMode: 'Razorpay',
+      paymentId: razorpay_payment_id,
     });
-    await newOrder.save();
 
-    // Step 4: Clear cart
+    await newOrder.save();
     cart.items = [];
     await cart.save();
 
-    res.status(200).json({ message: 'Order placed successfully', order: newOrder });
+    res.status(200).json({ message: 'Order confirmed and saved', order: newOrder });
   } catch (error) {
-    console.error('Checkout error:', error);
-    res.status(500).json({ message: 'Failed to complete order', error });
+    console.error('Payment confirmation error:', error);
+    res.status(500).json({ message: 'Payment confirmation failed', error });
   }
 };
+
 
