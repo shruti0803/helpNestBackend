@@ -268,8 +268,8 @@ export const checkHelperArrival = async (req, res) => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
 
-    // If within 1 km
-    if (distance < 1000) {
+    // If within 1 k
+    if (distance < 1500) {
       booking.hasArrived = true;
       await booking.save();
       return res.json({ arrived: true });

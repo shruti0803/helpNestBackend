@@ -116,4 +116,27 @@ export const getReviewsByService = async (req, res) => {
 };
 
 
+export const getUserReviewedBookings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const reviews = await Review.find(
+      { reviewer: userId },
+      "booking rating comment"
+    );
+
+    const reviewData = reviews.map((r) => ({
+      bookingId: r.booking.toString(),
+      rating: r.rating,
+      comment: r.comment
+    }));
+
+    res.json(reviewData);
+  } catch (err) {
+    console.error("Error fetching user reviews:", err);
+    res.status(500).json({ message: "Failed to fetch reviews" });
+  }
+};
+
+
 

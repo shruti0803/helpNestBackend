@@ -1,6 +1,6 @@
 // routes/review.routes.js
 import express from 'express';
-import { createReview, getHelperRating, getReviewsByService, getServiceRating } from '../controllers/reviewController.js';
+import { createReview, getHelperRating, getReviewsByService, getServiceRating, getUserReviewedBookings } from '../controllers/reviewController.js';
 
 
 import isAuthenticated from '../middleware/authMiddleware.js';
@@ -14,4 +14,5 @@ router.get('/helper/:helperId', getHelperRating);
 // Get average rating for a service (GET)
 router.get('/service/:serviceName',getServiceRating)
 router.get('/serviceReview/:serviceName', getReviewsByService)
+router.get('/by-user',isAuthenticated, getUserReviewedBookings)
 export default router;
