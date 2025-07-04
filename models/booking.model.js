@@ -20,6 +20,26 @@ const bookingSchema = new mongoose.Schema({
 type:String,
 required: true
   },
+    lat: {
+    type: Number,   // 🆕 Latitude
+    required: true
+  },
+  lng: {
+    type: Number,   // 🆕 Longitude
+    required: true
+  },
+  helperLat: {
+  type: Number
+},
+helperLng: {
+  type: Number
+}
+,
+hasArrived: {
+  type: Boolean,
+  default: false
+},
+
   city: {
     type: String,
     enum: ['Delhi', 'Mumbai', 'Bangalore', 'Chennai', 'Kolkata', 'Other'], // Customize as needed

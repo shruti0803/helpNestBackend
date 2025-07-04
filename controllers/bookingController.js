@@ -13,7 +13,9 @@ export const createBooking = async (req, res) => {
       phone,
       date,
       time,
-      genderPreference, // 👈 new field
+      genderPreference,
+      lat,        // ✅ added
+      lng         // ✅ added
     } = req.body;
 
     const userId = req.user.id; // from JWT middleware
@@ -28,15 +30,11 @@ export const createBooking = async (req, res) => {
       date,
       time,
       genderPreference,
+      lat,        // ✅ now included
+      lng         // ✅ now included
     });
 
     const savedBooking = await newBooking.save();
-
-
-
-
-
-
 
     res.status(201).json({
       message: "Booking created successfully",
@@ -47,6 +45,7 @@ export const createBooking = async (req, res) => {
     res.status(500).json({ message: "Server error while creating booking" });
   }
 };
+
 
 
 
@@ -223,6 +222,65 @@ export const verifyOtp = async (req, res) => {
 };
 
 
+
+export const updateHelperLocation = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { lat, lng } = req.body;
+
+    const updated = await Booking.findByIdAndUpdate(
+      bookingId,
+      { helperLat: lat, helperLng: lng },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json({ message: "Location updated", booking: updated });
+  } catch (err) {
+    console.error("Error updating location:", err);
+    res.status(500).json({ message: "Failed to update location" });
+  }
+};
+
+export const checkHelperArrival = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking || !booking.helperLat || !booking.helperLng || !booking.lat || !booking.lng) {
+      return res.status(400).json({ message: "Incomplete location data" });
+    }
+
+    // Haversine formula to calculate distance (in meters)
+    const toRad = (val) => (val * Math.PI) / 180;
+    const R = 6371000; // radius of Earth in meters
+
+    const dLat = toRad(booking.helperLat - booking.lat);
+    const dLon = toRad(booking.helperLng - booking.lng);
+    const lat1 = toRad(booking.lat);
+    const lat2 = toRad(booking.helperLat);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    // If within 1 km
+    if (distance < 1000) {
+      booking.hasArrived = true;
+      await booking.save();
+      return res.json({ arrived: true });
+    } else {
+      return res.json({ arrived: false, distance });
+    }
+  } catch (err) {
+    console.error("Arrival check failed", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 
