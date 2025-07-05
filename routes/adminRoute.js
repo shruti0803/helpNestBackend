@@ -1,5 +1,5 @@
 import express from "express";
-import { adminLogin, adminLogout, getAdminProfile, getAllBills, getAllHelpers, getAllUsers, getBookingsByCategory, getBookingsByCity, getDailyBookings, getEarningByMonth, getHelperSummary, getPendingSalaries, getUserSummary, paySalary, verifyHelper } from "../controllers/adminController.js";
+import { adminLogin, adminLogout, getAdminProfile, getAllBills, getAllHelpers, getAllUsers, getBookingsByCategory, getBookingsByCity, getDailyBookings, getEarningByMonth, getHelperSummary, getOverallRatingStats, getPendingSalaries, getUserSummary, paySalary, verifyHelper } from "../controllers/adminController.js";
 import isAdminAuthenticated from "../middleware/isAdminMiddleware.js";
 
 
@@ -26,4 +26,6 @@ router.get('/allBills', getAllBills);
 router.patch('/verify/:id', verifyHelper);
 router.get('/allsalaries', getPendingSalaries);
 router.post('/pay-salary', paySalary);
+router.get('/ratings-summary', getOverallRatingStats);
+
 export default router;

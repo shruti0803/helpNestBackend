@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import Bill from '../models/bill.model.js'
 import User from "../models/user.model.js";
 import Helper from "../models/helper.model.js"
+import Review from "../models/review.model.js";
 // 🔐 Admin Login
 export const adminLogin = async (req, res) => {
   try {
@@ -461,3 +462,40 @@ export const paySalary = async (req, res) => {
 
 
 
+export const getOverallRatingStats = async (req, res) => {
+  try {
+    const stats = await Review.aggregate([
+      {
+        $group: {
+          _id: '$rating',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 } // Optional: sort by star (1 to 5)
+      }
+    ]);
+
+    // Map to hold 1-5 star counts
+    const ratingMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let totalRatings = 0;
+    let totalPoints = 0;
+
+    stats.forEach(stat => {
+      ratingMap[stat._id] = stat.count;
+      totalRatings += stat.count;
+      totalPoints += stat._id * stat.count;
+    });
+
+    const averageRating = totalRatings ? (totalPoints / totalRatings).toFixed(2) : 0;
+
+    res.status(200).json({
+      averageRating: Number(averageRating),
+      totalRatings,
+      ratingBreakdown: ratingMap
+    });
+  } catch (error) {
+    console.error('Error in getOverallRatingStats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
