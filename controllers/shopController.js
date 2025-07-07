@@ -259,3 +259,62 @@ export const confirmMedicinePayment = async (req, res) => {
 };
 
 
+
+
+export const updateStock = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const product = await Medicine.findById(id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    product.stock += 1;
+    await product.save();
+
+    res.json({ message: 'Stock incremented', product });
+  } catch (err) {
+    console.error('Error updating stock:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// controllers/shopController.js
+
+import Prescription from '../models/prescription.model.js'
+
+export const uploadPrescription = async (req, res) => {
+  try {
+    
+    const userId = req.user?.id; // Assuming login middleware sets `req.user`
+    const { medicineId } = req.body;
+ console.log("📥 Inside uploadPrescription controller");
+    const file = req.file;
+   
+   
+
+  
+    if (!userId || !medicineId) {
+      return res.status(400).json({ success: false, message: 'Missing userId or medicineId' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    const newPrescription = new Prescription({
+      user: userId,
+      medicine: medicineId,
+      fileUrl: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`,
+      uploadedAt: new Date(),
+    });
+
+    await newPrescription.save();
+
+    res.status(200).json({ success: true, message: 'Prescription uploaded successfully', data: newPrescription });
+  } catch (err) {
+    console.error('Upload prescription error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};

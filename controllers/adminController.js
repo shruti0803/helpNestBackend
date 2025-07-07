@@ -4,6 +4,9 @@ import Bill from '../models/bill.model.js'
 import User from "../models/user.model.js";
 import Helper from "../models/helper.model.js"
 import Review from "../models/review.model.js";
+import Shop from "../models/shop.model.js";
+import Prescription from "../models/prescription.model.js"
+import Cart from "../models/cart.model.js"
 // 🔐 Admin Login
 export const adminLogin = async (req, res) => {
   try {
@@ -497,5 +500,154 @@ export const getOverallRatingStats = async (req, res) => {
   } catch (error) {
     console.error('Error in getOverallRatingStats:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+export const getShopProductCount = async (req, res) => {
+  try {
+    const count = await Shop.countDocuments({});
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error("Error fetching shop product count:", error);
+    res.status(500).json({ message: "Failed to fetch product count" });
+  }
+};
+
+
+export const getBookingCount = async (req, res) => {
+  try {
+    const count = await Booking.countDocuments({});
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error("Error fetching shop product count:", error);
+    res.status(500).json({ message: "Failed to fetch product count" });
+  }
+};
+
+import moment from 'moment';
+import Order from "../models/order.model.js";
+
+
+
+export const getOrdersPerWeek = async (req, res) => {
+  try {
+    const today = moment.utc().endOf('day'); // use UTC
+    const sixWeeksAgo = moment.utc().subtract(5, 'weeks').startOf('isoWeek'); // use UTC
+
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          orderedAt: {
+            $gte: sixWeeksAgo.toDate(),
+            $lte: today.toDate(),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            week: { $isoWeek: '$orderedAt' },
+            year: { $isoWeekYear: '$orderedAt' },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { '_id.year': 1, '_id.week': 1 },
+      },
+    ]);
+
+    const result = [];
+
+    for (let i = 0; i < 6; i++) {
+      const weekStart = moment.utc().subtract(5 - i, 'weeks').startOf('isoWeek');
+      const year = weekStart.isoWeekYear();
+      const week = weekStart.isoWeek();
+      const label = `Week ${week}`;
+
+      const match = orders.find(
+        (o) => o._id.week === week && o._id.year === year
+      );
+
+      result.push({
+        label,
+        count: match ? match.count : 0,
+      });
+    }
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error fetching weekly orders:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+export const getUnverifiedPrescriptions = async (req, res) => {
+  try {
+    // Find only prescriptions which are neither verified nor rejected
+    const prescriptions = await Prescription.find({ verified: false, rejected: false })
+      .populate('medicine', 'name') // Pull `name` field from Shop model
+      .populate('user', 'name')     // Pull `name` field from User model
+      .lean(); // makes the returned docs plain JS objects, not Mongoose docs
+
+    res.json(prescriptions); // ✅ finally return the actual populated data
+  } catch (err) {
+    console.error('Error fetching prescriptions:', err);
+    res.status(500).json({ error: 'Failed to fetch prescriptions' });
+  }
+};
+
+export const verifyPrescription = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Find prescription with populated fields
+    const prescription = await Prescription.findById(id).populate('medicine').populate('user');
+
+    if (!prescription) {
+      return res.status(404).json({ error: 'Prescription not found' });
+    }
+
+    if (prescription.verified) {
+      return res.status(400).json({ error: 'Prescription already verified' });
+    }
+
+    // 2. Mark as verified
+    prescription.verified = true;
+    prescription.verifiedAt = new Date();
+    await prescription.save();
+
+    const userId = prescription.user._id;
+    const medicineId = prescription.medicine._id;
+
+    // 3. Add medicine to user's cart
+    let cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      // if no cart exists, create one
+      cart = new Cart({
+        userId,
+        items: [{ medicineId, quantity: 1 }]
+      });
+    } else {
+      // check if item already exists in cart
+      const existingItem = cart.items.find(item => item.medicineId.equals(medicineId));
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.items.push({ medicineId, quantity: 1 });
+      }
+    }
+
+    await cart.save();
+
+    res.json({ message: 'Prescription verified and item added to cart' });
+  } catch (err) {
+    console.error('Error verifying prescription:', err);
+    res.status(500).json({ error: 'Failed to verify prescription' });
   }
 };
