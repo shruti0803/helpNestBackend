@@ -43,7 +43,7 @@ export const adminLogin = async (req, res) => {
       expiresIn: "1d",
     });
 
-    console.log("🔐 Admin TOKEN_SECRET:", process.env.TOKEN_SECRET);
+   // console.log("🔐 Admin TOKEN_SECRET:", process.env.TOKEN_SECRET);
 
     return res
       .status(201)

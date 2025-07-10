@@ -14,11 +14,17 @@ export const createBooking = async (req, res) => {
       date,
       time,
       genderPreference,
-      lat,        // ✅ added
-      lng         // ✅ added
+      lat,
+      lng,
+      duration // ✅ new field from frontend
     } = req.body;
 
     const userId = req.user.id; // from JWT middleware
+
+    // Validate duration (optional but recommended)
+    if (!duration || typeof duration !== 'number' || duration < 15 || duration > 480) {
+      return res.status(400).json({ message: "Invalid or missing duration (must be between 15 and 480 minutes)" });
+    }
 
     const newBooking = new Booking({
       user: userId,
@@ -30,8 +36,9 @@ export const createBooking = async (req, res) => {
       date,
       time,
       genderPreference,
-      lat,        // ✅ now included
-      lng         // ✅ now included
+      lat,
+      lng,
+      duration // ✅ included in DB entry
     });
 
     const savedBooking = await newBooking.save();
@@ -45,6 +52,7 @@ export const createBooking = async (req, res) => {
     res.status(500).json({ message: "Server error while creating booking" });
   }
 };
+
 
 
 
