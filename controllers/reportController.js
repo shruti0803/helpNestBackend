@@ -50,7 +50,8 @@ export const getReportsByUser = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const reports = await Report.find({ reporter: userId }).select("booking reason details")
+    const reports = await Report.find({ reporter: userId }).select("booking reason details status adminNote")
+
 
   .lean(); 
 

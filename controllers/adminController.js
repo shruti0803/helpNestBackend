@@ -7,6 +7,7 @@ import Review from "../models/review.model.js";
 import Shop from "../models/shop.model.js";
 import Prescription from "../models/prescription.model.js"
 import Cart from "../models/cart.model.js"
+import Report from "../models/report.model.js";
 // 🔐 Admin Login
 export const adminLogin = async (req, res) => {
   try {
@@ -649,5 +650,84 @@ export const verifyPrescription = async (req, res) => {
   } catch (err) {
     console.error('Error verifying prescription:', err);
     res.status(500).json({ error: 'Failed to verify prescription' });
+  }
+};
+
+
+
+
+export const getAllReportsForAdmin = async (req, res) => {
+  try {
+    const reports = await Report.find()
+      .populate({
+        path: 'booking',
+        select: '_id date status', // or add more fields like 'service'
+      })
+      .populate({
+        path: 'reporter',
+        select: 'name email', // or phone
+      })
+      .populate({
+        path: 'reportedHelper',
+        select: 'name phone', // or domain, etc.
+      })
+      .sort({ createdAt: -1 }); // latest first
+
+    res.status(200).json(reports);
+  } catch (err) {
+    console.error('Error fetching reports for admin:', err);
+    res.status(500).json({ message: 'Server error while fetching reports' });
+  }
+};
+
+
+export const updateReportStatus = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, adminNote } = req.body;
+
+    // Validate status input
+    if (!['resolved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    // Find the report
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    // Update fields
+    report.status = status;
+    report.adminNote = adminNote || ""; // ensure it’s at least a string
+
+    // Save
+    await report.save();
+
+    // Respond
+    res.status(200).json({
+      message: 'Report status and admin note updated successfully',
+      report,
+    });
+  } catch (err) {
+    console.error('Error updating report status:', err);
+    res.status(500).json({ message: 'Server error while updating report' });
+  }
+};
+
+
+
+export const getAllRatings = async (req, res) => {
+  try {
+    const ratings = await Review.find()
+      .populate('booking', '_id')       // optionally include booking ID
+      .populate('reviewer', 'name')     // optionally include reviewer's name
+      .populate('helper', 'name')       // optionally include helper's name
+      .sort({ createdAt: -1 });         // latest first
+
+    res.status(200).json(ratings);
+  } catch (error) {
+    console.error('Error fetching all ratings:', error);
+    res.status(500).json({ message: 'Failed to fetch ratings' });
   }
 };
