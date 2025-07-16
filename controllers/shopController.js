@@ -289,7 +289,7 @@ export const uploadPrescription = async (req, res) => {
     
     const userId = req.user?.id; // Assuming login middleware sets `req.user`
     const { medicineId } = req.body;
- console.log("📥 Inside uploadPrescription controller");
+ 
     const file = req.file;
    
    
@@ -316,5 +316,23 @@ export const uploadPrescription = async (req, res) => {
   } catch (err) {
     console.error('Upload prescription error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+export const getUserOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const orders = await Order.find({ userId })
+      .populate('items.medicineId', 'name price imageUrl') // populate essential medicine fields
+      .sort({ createdAt: -1 });
+
+    if (!orders || orders.length === 0) {
+      return res.status(200).json({ message: 'No orders found', orders: [] });
+    }
+
+    res.status(200).json({ orders });
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
+    res.status(500).json({ message: 'Failed to fetch orders', error });
   }
 };

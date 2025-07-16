@@ -1,5 +1,5 @@
 import express from "express";
-import { addMedicine, addToCart, buyMedicine, confirmMedicinePayment, getAllMedicines, getCart, getMedicineById, removeFromCart, updateStock, uploadPrescription } from "../controllers/shopController.js";
+import { addMedicine, addToCart, buyMedicine, confirmMedicinePayment, getAllMedicines, getCart, getMedicineById, getUserOrders, removeFromCart, updateStock, uploadPrescription } from "../controllers/shopController.js";
 import isAuthenticated from "../middleware/authMiddleware.js";
 import multer from 'multer';
 // import { protectAdmin } from "../middleware/authMiddleware.js"; // Optional if auth is used
@@ -37,4 +37,5 @@ router.post('/upload-prescription', isAuthenticated, upload.single('prescription
 // ✅ Confirm Razorpay payment after success
 router.post('/confirm-payment', isAuthenticated, confirmMedicinePayment);
 router.get("/:id", getMedicineById);
+router.get('/orders/user', isAuthenticated, getUserOrders);
 export default router;
