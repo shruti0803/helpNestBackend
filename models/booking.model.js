@@ -70,7 +70,7 @@ duration: {
 
   status: {
     type: String,
-    enum: ["Pending", "Scheduled", "Completed"],
+    enum: ["Pending", "Scheduled", "Completed", "Cancelled"],
     default: "Pending",
   },
   isCompleted:{

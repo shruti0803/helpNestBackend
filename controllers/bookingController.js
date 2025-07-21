@@ -293,6 +293,50 @@ export const checkHelperArrival = async (req, res) => {
 
 
 
+import Salary from "../models/salary.model.js"; // <-- Import Salary
+
+export const cancelBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status === "Cancelled") {
+      return res.status(400).json({ message: "Booking already cancelled" });
+    }
+
+    // Check if booking was Scheduled before cancel
+    const wasScheduled = booking.status === "Scheduled";
+    const helperId = booking.helper;
+
+    booking.status = "Cancelled";
+    await booking.save();
+
+    if (wasScheduled && helperId) {
+      // ✅ Add ₹100 to helper's pending salary
+      let salary = await Salary.findOne({ helperId });
+
+      if (!salary) {
+        // Create a new salary record if it doesn't exist
+       salary = new Salary({ helperId, pendingAmount: 100 });
+      } else {
+        salary.pendingAmount += 100;
+      }
+
+      await salary.save();
+    }
+
+    res.status(200).json({ message: "Booking cancelled successfully" });
+  } catch (error) {
+    console.error("Error cancelling booking:", error);
+    res.status(500).json({ message: "Failed to cancel booking" });
+  }
+};
+
 
 
 

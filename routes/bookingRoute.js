@@ -1,5 +1,5 @@
 import express from "express";
-import { checkHelperArrival, createBooking, getAllRequestsByUser, getAvailableTasks, getCompletedBookings, getScheduledBookings, markBookingCompletedByUser, scheduleBooking, updateHelperLocation, verifyOtp } from "../controllers/bookingController.js";
+import { cancelBooking, checkHelperArrival, createBooking, getAllRequestsByUser, getAvailableTasks, getCompletedBookings, getScheduledBookings, markBookingCompletedByUser, scheduleBooking, updateHelperLocation, verifyOtp } from "../controllers/bookingController.js";
 import isAuthenticated from "../middleware/authMiddleware.js";
 import isHelperAuthenticated from "../middleware/isHelperMiddleware.js";
 const router = express.Router();
@@ -17,5 +17,6 @@ router.put('/verify-otp', verifyOtp);
 router.put("/update-helper-location/:bookingId", isHelperAuthenticated, updateHelperLocation);
 // routes/bookings.js
 router.post('/check-arrival/:id', isHelperAuthenticated, checkHelperArrival);
+router.delete("/:bookingId", isAuthenticated, cancelBooking);
 
 export default router;
