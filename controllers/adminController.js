@@ -3,6 +3,11 @@ import jwt from "jsonwebtoken";
 import Bill from '../models/bill.model.js'
 import User from "../models/user.model.js";
 import Helper from "../models/helper.model.js"
+import Review from "../models/review.model.js";
+import Shop from "../models/shop.model.js";
+import Prescription from "../models/prescription.model.js"
+import Cart from "../models/cart.model.js"
+import Report from "../models/report.model.js";
 // 🔐 Admin Login
 export const adminLogin = async (req, res) => {
   try {
@@ -39,7 +44,7 @@ export const adminLogin = async (req, res) => {
       expiresIn: "1d",
     });
 
-    console.log("🔐 Admin TOKEN_SECRET:", process.env.TOKEN_SECRET);
+   // console.log("🔐 Admin TOKEN_SECRET:", process.env.TOKEN_SECRET);
 
     return res
       .status(201)
@@ -461,3 +466,268 @@ export const paySalary = async (req, res) => {
 
 
 
+export const getOverallRatingStats = async (req, res) => {
+  try {
+    const stats = await Review.aggregate([
+      {
+        $group: {
+          _id: '$rating',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 } // Optional: sort by star (1 to 5)
+      }
+    ]);
+
+    // Map to hold 1-5 star counts
+    const ratingMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let totalRatings = 0;
+    let totalPoints = 0;
+
+    stats.forEach(stat => {
+      ratingMap[stat._id] = stat.count;
+      totalRatings += stat.count;
+      totalPoints += stat._id * stat.count;
+    });
+
+    const averageRating = totalRatings ? (totalPoints / totalRatings).toFixed(2) : 0;
+
+    res.status(200).json({
+      averageRating: Number(averageRating),
+      totalRatings,
+      ratingBreakdown: ratingMap
+    });
+  } catch (error) {
+    console.error('Error in getOverallRatingStats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+export const getShopProductCount = async (req, res) => {
+  try {
+    const count = await Shop.countDocuments({});
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error("Error fetching shop product count:", error);
+    res.status(500).json({ message: "Failed to fetch product count" });
+  }
+};
+
+
+export const getBookingCount = async (req, res) => {
+  try {
+    const count = await Booking.countDocuments({});
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error("Error fetching shop product count:", error);
+    res.status(500).json({ message: "Failed to fetch product count" });
+  }
+};
+
+import moment from 'moment';
+import Order from "../models/order.model.js";
+
+
+
+export const getOrdersPerWeek = async (req, res) => {
+  try {
+    const today = moment.utc().endOf('day'); // use UTC
+    const sixWeeksAgo = moment.utc().subtract(5, 'weeks').startOf('isoWeek'); // use UTC
+
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          orderedAt: {
+            $gte: sixWeeksAgo.toDate(),
+            $lte: today.toDate(),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            week: { $isoWeek: '$orderedAt' },
+            year: { $isoWeekYear: '$orderedAt' },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { '_id.year': 1, '_id.week': 1 },
+      },
+    ]);
+
+    const result = [];
+
+    for (let i = 0; i < 6; i++) {
+      const weekStart = moment.utc().subtract(5 - i, 'weeks').startOf('isoWeek');
+      const year = weekStart.isoWeekYear();
+      const week = weekStart.isoWeek();
+      const label = `Week ${week}`;
+
+      const match = orders.find(
+        (o) => o._id.week === week && o._id.year === year
+      );
+
+      result.push({
+        label,
+        count: match ? match.count : 0,
+      });
+    }
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error fetching weekly orders:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+export const getUnverifiedPrescriptions = async (req, res) => {
+  try {
+    // Find only prescriptions which are neither verified nor rejected
+    const prescriptions = await Prescription.find({ verified: false, rejected: false })
+      .populate('medicine', 'name') // Pull `name` field from Shop model
+      .populate('user', 'name')     // Pull `name` field from User model
+      .lean(); // makes the returned docs plain JS objects, not Mongoose docs
+
+    res.json(prescriptions); // ✅ finally return the actual populated data
+  } catch (err) {
+    console.error('Error fetching prescriptions:', err);
+    res.status(500).json({ error: 'Failed to fetch prescriptions' });
+  }
+};
+
+export const verifyPrescription = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Find prescription with populated fields
+    const prescription = await Prescription.findById(id).populate('medicine').populate('user');
+
+    if (!prescription) {
+      return res.status(404).json({ error: 'Prescription not found' });
+    }
+
+    if (prescription.verified) {
+      return res.status(400).json({ error: 'Prescription already verified' });
+    }
+
+    // 2. Mark as verified
+    prescription.verified = true;
+    prescription.verifiedAt = new Date();
+    await prescription.save();
+
+    const userId = prescription.user._id;
+    const medicineId = prescription.medicine._id;
+
+    // 3. Add medicine to user's cart
+    let cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      // if no cart exists, create one
+      cart = new Cart({
+        userId,
+        items: [{ medicineId, quantity: 1 }]
+      });
+    } else {
+      // check if item already exists in cart
+      const existingItem = cart.items.find(item => item.medicineId.equals(medicineId));
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.items.push({ medicineId, quantity: 1 });
+      }
+    }
+
+    await cart.save();
+
+    res.json({ message: 'Prescription verified and item added to cart' });
+  } catch (err) {
+    console.error('Error verifying prescription:', err);
+    res.status(500).json({ error: 'Failed to verify prescription' });
+  }
+};
+
+
+
+
+export const getAllReportsForAdmin = async (req, res) => {
+  try {
+    const reports = await Report.find()
+      .populate({
+        path: 'booking',
+        select: '_id date status', // or add more fields like 'service'
+      })
+      .populate({
+        path: 'reporter',
+        select: 'name email', // or phone
+      })
+      .populate({
+        path: 'reportedHelper',
+        select: 'name phone', // or domain, etc.
+      })
+      .sort({ createdAt: -1 }); // latest first
+
+    res.status(200).json(reports);
+  } catch (err) {
+    console.error('Error fetching reports for admin:', err);
+    res.status(500).json({ message: 'Server error while fetching reports' });
+  }
+};
+
+
+export const updateReportStatus = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, adminNote } = req.body;
+
+    // Validate status input
+    if (!['resolved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    // Find the report
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    // Update fields
+    report.status = status;
+    report.adminNote = adminNote || ""; // ensure it’s at least a string
+
+    // Save
+    await report.save();
+
+    // Respond
+    res.status(200).json({
+      message: 'Report status and admin note updated successfully',
+      report,
+    });
+  } catch (err) {
+    console.error('Error updating report status:', err);
+    res.status(500).json({ message: 'Server error while updating report' });
+  }
+};
+
+
+
+export const getAllRatings = async (req, res) => {
+  try {
+    const ratings = await Review.find()
+      .populate('booking', '_id')       // optionally include booking ID
+      .populate('reviewer', 'name')     // optionally include reviewer's name
+      .populate('helper', 'name')       // optionally include helper's name
+      .sort({ createdAt: -1 });         // latest first
+
+    res.status(200).json(ratings);
+  } catch (error) {
+    console.error('Error fetching all ratings:', error);
+    res.status(500).json({ message: 'Failed to fetch ratings' });
+  }
+};

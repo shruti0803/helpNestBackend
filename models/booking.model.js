@@ -58,12 +58,19 @@ hasArrived: {
     required: true,
   },
   time: {
-    type: String, // e.g., "10:30 AM" or "15:00"
-    required: true,
-  },
+  type: String, // e.g., "10:30 AM" or "15:00"
+  required: true,
+},
+duration: {
+  type: Number, // e.g., 60 for 1 hour
+  required: true,
+  min: 15,
+  max: 480,
+},
+
   status: {
     type: String,
-    enum: ["Pending", "Scheduled", "Completed"],
+    enum: ["Pending", "Scheduled", "Completed", "Cancelled"],
     default: "Pending",
   },
   isCompleted:{

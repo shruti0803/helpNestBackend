@@ -1,5 +1,5 @@
 import express from "express";
-import { adminLogin, adminLogout, getAdminProfile, getAllBills, getAllHelpers, getAllUsers, getBookingsByCategory, getBookingsByCity, getDailyBookings, getEarningByMonth, getHelperSummary, getPendingSalaries, getUserSummary, paySalary, verifyHelper } from "../controllers/adminController.js";
+import { adminLogin, adminLogout, getAdminProfile, getAllBills, getAllHelpers, getAllRatings, getAllReportsForAdmin, getAllUsers, getBookingCount, getBookingsByCategory, getBookingsByCity, getDailyBookings, getEarningByMonth, getHelperSummary, getOrdersPerWeek, getOverallRatingStats, getPendingSalaries, getShopProductCount, getUnverifiedPrescriptions, getUserSummary, paySalary, updateReportStatus, verifyHelper, verifyPrescription } from "../controllers/adminController.js";
 import isAdminAuthenticated from "../middleware/isAdminMiddleware.js";
 
 
@@ -26,4 +26,13 @@ router.get('/allBills', getAllBills);
 router.patch('/verify/:id', verifyHelper);
 router.get('/allsalaries', getPendingSalaries);
 router.post('/pay-salary', paySalary);
+router.get('/ratings-summary', getOverallRatingStats);
+router.get("/product-count", getShopProductCount);
+router.get("/booking-count", getBookingCount);
+router.get('/orders-per-week', getOrdersPerWeek);
+router.get('/getReports', getAllReportsForAdmin);
+router.patch('/updateReportStatus/:reportId',  updateReportStatus);
+router.get('/unverified-prescriptions',isAdminAuthenticated, getUnverifiedPrescriptions);
+router.post('/verify-prescription/:id', isAdminAuthenticated,verifyPrescription);
+router.get('/allReviews', getAllRatings);
 export default router;

@@ -378,3 +378,71 @@ export const getStreak = async (req, res) => {
 
 
 
+import BloodPressure from "../models/bp.model.js";
+
+export const addBpEntry = async (req, res) => {
+  try {
+    const { systolic, diastolic, date } = req.body;
+    const userId = req.user?.id;
+
+    if (!systolic || !diastolic || !date) {
+      return res.status(400).json({ error: "All fields are required." });
+    }
+
+    const formattedDate = new Date(new Date(date).setUTCHours(0, 0, 0, 0));
+
+    const existing = await BloodPressure.findOne({
+      user: userId,
+      date: formattedDate,
+    });
+
+    if (existing) {
+      return res
+        .status(400)
+        .json({ error: "BP entry already exists for today." });
+    }
+
+    const entry = await BloodPressure.create({
+      user: userId,
+      date: formattedDate,
+      systolic,
+      diastolic,
+    });
+
+    res.status(201).json({ message: "BP entry added successfully", entry });
+  } catch (err) {
+    console.error("❌ Failed to add BP entry", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+export const getBpByDate = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ error: "Date is required" });
+    }
+
+    const isoDate = new Date(date);
+    const nextDay = new Date(isoDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const bpRecord = await BloodPressure.findOne({
+      user: userId,
+      date: {
+        $gte: isoDate,
+        $lt: nextDay,
+      },
+    });
+
+    if (!bpRecord) {
+      return res.status(404).json({ message: "No BP record for this date" });
+    }
+
+    return res.status(200).json(bpRecord);
+  } catch (err) {
+    console.error("Error fetching BP record:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};

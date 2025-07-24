@@ -18,6 +18,7 @@ import adminRoutes from "./routes/adminRoute.js"; // ✅ adjust path
 import notificationRoutes from "./routes/notificationRoute.js";
 import reviewRoutes from './routes/reviewRoute.js';
 import shopRoutes from "./routes/shopRoute.js"
+import reportRoutes from "./routes/reportRoute.js"
 dotenv.config({ path: ".env" });
 
 const app = express();
@@ -75,8 +76,9 @@ app.use("/api/admin", adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/reviews', reviewRoutes);
-
+app.use('/api/reports', reportRoutes);
 app.use("/api/shop", shopRoutes);
+
 
 // app.use("/api/notifications", notificationRoutes);
 // ✅ Connect to database and start server
